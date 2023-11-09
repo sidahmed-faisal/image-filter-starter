@@ -1,6 +1,6 @@
-import express from 'express';
+import express, { Router, Request, Response } from 'express';
 import bodyParser from 'body-parser';
-import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import {validURL,filterImageFromURL, deleteLocalFiles} from './util/util';
 
 (async () => {
 
@@ -16,6 +16,44 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   // @TODO1 IMPLEMENT A RESTFUL ENDPOINT
   // GET /filteredimage?image_url={{URL}}
   // endpoint to filter an image from a public url.
+  app.get("/filteredimage",async (req : Request, res: Response) =>{
+  
+    
+  
+    // if (!validURL(imageURL)) {
+    //   return res
+    //     .status(422)
+    //     .send({ error: 'image_url is not a valid image' })
+    // }
+    // if(!validURL){
+    //   return res.status(422).send('This URL either number or the image doesn\'t exist');
+    // }
+    if (
+      typeof req.query.image_url === 'string'
+    ){
+      const imageURL = req.query.image_url
+      
+      if (!validURL(imageURL)) {
+        return res
+          .status(422)
+          .send({ error: 'image_url is not a valid image' })
+      }
+
+      try {
+        const image = await filterImageFromURL(imageURL)
+        return res.sendFile(image, async () => {
+          await deleteLocalFiles([image])
+        })
+      } catch (error) {
+        return res
+          .status(422)
+          .send({ error: 'This URL is not for an image' })
+      }
+    } else {
+      res.status(400).send({ error: 'image_url is invalid' })
+    }
+  }
+)
   // IT SHOULD
   //    1
   //    1. validate the image_url query
